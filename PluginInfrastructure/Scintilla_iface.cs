@@ -8,7 +8,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Kbg.NppPluginNET.PluginInfrastructure
+namespace SQLParamParser.PluginInfrastructure
 {
     /// <summary>
     /// Compatible with Windows NMHDR.

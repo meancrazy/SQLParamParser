@@ -1,9 +1,10 @@
 ﻿// NPP plugin platform for .Net v0.92.83 by Kasper B. Graversen etc.
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace Kbg.NppPluginNET.PluginInfrastructure
+namespace SQLParamParser.PluginInfrastructure
 {
     public class ClikeStringArray : IDisposable
     {

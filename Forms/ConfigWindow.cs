@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
-namespace Kbg.NppPluginNET
+namespace SQLParamParser.Forms
 {
     public partial class ConfigWindow : Form
     {

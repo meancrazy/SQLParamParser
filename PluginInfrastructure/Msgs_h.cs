@@ -7,7 +7,7 @@
 
 using System;
 
-namespace Kbg.NppPluginNET.PluginInfrastructure
+namespace SQLParamParser.PluginInfrastructure
 {
     class Constants
     {

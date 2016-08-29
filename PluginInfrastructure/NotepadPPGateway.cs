@@ -1,9 +1,8 @@
 ﻿// NPP plugin platform for .Net v0.92.83 by Kasper B. Graversen etc.
-using System;
-using System.Text;
-using NppPluginNET.PluginInfrastructure;
 
-namespace Kbg.NppPluginNET.PluginInfrastructure
+using System.Text;
+
+namespace SQLParamParser.PluginInfrastructure
 {
 	public interface INotepadPPGateway
 	{

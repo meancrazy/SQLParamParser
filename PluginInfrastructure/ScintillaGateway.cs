@@ -1,8 +1,9 @@
 ﻿// NPP plugin platform for .Net v0.92.83 by Kasper B. Graversen etc.
+
 using System;
 using System.Text;
 
-namespace Kbg.NppPluginNET.PluginInfrastructure
+namespace SQLParamParser.PluginInfrastructure
 {
     /// <summary>
     /// This it the plugin-writers primary interface to Notepad++/Scintilla.

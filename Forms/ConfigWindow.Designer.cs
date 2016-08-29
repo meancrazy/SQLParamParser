@@ -1,4 +1,4 @@
-﻿namespace Kbg.NppPluginNET
+﻿namespace SQLParamParser.Forms
 {
     partial class ConfigWindow
     {

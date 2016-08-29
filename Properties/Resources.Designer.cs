@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Kbg.NppPluginNET.Properties {
+namespace SQLParamParser.Properties {
     using System;
     
     
