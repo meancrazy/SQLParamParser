@@ -91,7 +91,7 @@ namespace SQLParamParser
                 //Group0 - paramNumber
                 //Group1 - paramValue (original)
                 //Group2 - param Type
-                var regex = new Regex(@":p(?<Number>\d+)[\s]*=[\s]*(?<Value>[^\[]+)[\s]\[(?i)TYPE:[\s]*(?<Type>[^\s]+)[\s]*\([^\]]*\)[\s]*\]", RegexOptions.IgnoreCase);
+                var regex = new Regex(@":p(?<Number>\d+)[\s]*=[\s]*(?<Value>((?!:p)[^\[])+)[\s]\[(?i)TYPE:[\s]*(?<Type>[^\s]+)[\s]*\([^\]]*\)[\s]*\]", RegexOptions.IgnoreCase);
 
                 var matches = regex.Matches(text);
 
@@ -116,14 +116,13 @@ namespace SQLParamParser
                     string paramValueFormated;
                     switch (paramType)
                     {
-                        case "STRING":
-                        case "STRINGFIXEDLENGTH":
-                        case "INT32":
-                        case "INT64":
-                        case "UINT32":
-                        case "UINT64":
-                            paramValueFormated = paramValueOriginal;
-                            break;
+                        //case "STRING":
+                        //case "STRINGFIXEDLENGTH":
+                        //case "INT32":
+                        //case "INT64":
+                        //case "UINT32":
+                        //case "UINT64":
+                        //break;
                         case "DECIMAL":
                             paramValueFormated = decimal.Parse(paramValueOriginal).ToString(new NumberFormatInfo { NumberDecimalSeparator = "." });
                             break;
@@ -133,8 +132,13 @@ namespace SQLParamParser
                         case "DATETIME":
                             paramValueFormated = $"'{DateTime.Parse(paramValueOriginal).ToString("yyyy-MM-dd HH:mm:ss")}'";
                             break;
+                        case "BOOLEAN":
+                            paramValueFormated = bool.Parse(paramValueOriginal) ? "1" : "0";
+                            break;
                         default:
-                            throw new Exception("Unknown param type = " + paramType);
+                            paramValueFormated = paramValueOriginal;
+                            break;
+                            //throw new Exception("Unknown param type = " + paramType);
                     }
 
                     parameters.Add(paramNumber, paramValueFormated);
