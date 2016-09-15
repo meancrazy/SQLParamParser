@@ -80,6 +80,11 @@ namespace SQLParamParser
             Win32.WritePrivateProfileString("SomeSection", "SomeKey", _someSetting ? "1" : "0", _iniFilePath);
         }
 
+        private static string NullOrValue(string originalValue, Func<string, string> processedValue)
+        {
+            return originalValue.Equals("NULL", StringComparison.OrdinalIgnoreCase) ? "NULL" : processedValue.Invoke(originalValue);
+        }
+
         internal static void ParseParams()
         {
             try
@@ -124,16 +129,16 @@ namespace SQLParamParser
                         //case "UINT64":
                         //break;
                         case "DECIMAL":
-                            paramValueFormated = decimal.Parse(paramValueOriginal).ToString(new NumberFormatInfo { NumberDecimalSeparator = "." });
+                            paramValueFormated = NullOrValue(paramValueOriginal, o => decimal.Parse(paramValueOriginal).ToString(new NumberFormatInfo { NumberDecimalSeparator = "." }));
                             break;
                         case "GUID":
-                            paramValueFormated = $"'{FixGuidText(paramValueOriginal)}'";
+                            paramValueFormated = NullOrValue(paramValueOriginal, o => $"'{FixGuidText(paramValueOriginal)}'");
                             break;
                         case "DATETIME":
-                            paramValueFormated = $"'{DateTime.Parse(paramValueOriginal).ToString("yyyy-MM-dd HH:mm:ss")}'";
+                            paramValueFormated = NullOrValue(paramValueOriginal, o => $"'{DateTime.Parse(paramValueOriginal).ToString("yyyy-MM-dd HH:mm:ss")}'");
                             break;
                         case "BOOLEAN":
-                            paramValueFormated = bool.Parse(paramValueOriginal) ? "1" : "0";
+                            paramValueFormated = NullOrValue(paramValueOriginal, o => bool.Parse(paramValueOriginal) ? "1" : "0");
                             break;
                         default:
                             paramValueFormated = paramValueOriginal;
