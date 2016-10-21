@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using PoorMansTSqlFormatterLib.Formatters;
+using PoorMansTSqlFormatterLib.Parsers;
+using PoorMansTSqlFormatterLib.Tokenizers;
+using SQLParamParser.Config;
 using SQLParamParser.Forms;
 using SQLParamParser.PluginInfrastructure;
 
@@ -16,13 +18,13 @@ namespace SQLParamParser
     public class Main
     {
         internal const string PluginName = "SQLParamParser";
-        private static string _iniFilePath = null;
-        private static bool _someSetting = false;
-        private static ConfigWindow _configWindow = null;
-        private static int _idMyDlg = -1;
+        private static Settings _settings;
+
+        private static ConfigWindow _configWindow;
+        private static int _idConfigWindow = -1;
         private static readonly Bitmap TbBmp = Properties.Resources.star;
         private static readonly Bitmap TbBmpTbTab = Properties.Resources.star_bmp;
-        private static Icon _tbIcon = null;
+        private static Icon _tbIcon;
 
         private static readonly IScintillaGateway Editor = new ScintillaGateway(PluginBase.GetCurrentScintilla());
 
@@ -33,9 +35,14 @@ namespace SQLParamParser
             return regex.Replace(guid, "");
         }
 
-        private static void SetSQLLang()
+        private static void SetSqlLang()
         {
             Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_SETCURRENTLANGTYPE, 0, (int)LangType.L_SQL);
+        }
+
+        private static string GetCurrentText()
+        {
+            return Editor.GetText(Editor.GetLength() + 1);
         }
 
         public static void OnNotification(ScNotification notification)
@@ -52,32 +59,29 @@ namespace SQLParamParser
 
         internal static void CommandMenuInit()
         {
-            StringBuilder sbIniFilePath = new StringBuilder(Win32.MAX_PATH);
-            Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_GETPLUGINSCONFIGDIR, Win32.MAX_PATH, sbIniFilePath);
-            _iniFilePath = sbIniFilePath.ToString();
-            if (!Directory.Exists(_iniFilePath)) Directory.CreateDirectory(_iniFilePath);
-            _iniFilePath = Path.Combine(_iniFilePath, PluginName + ".ini");
-            _someSetting = (Win32.GetPrivateProfileInt("SomeSection", "SomeKey", 0, _iniFilePath) != 0);
+            _settings = new Settings();
 
             PluginBase.SetCommand(0, "Parse", ParseParams, new ShortcutKey(false, false, false, Keys.None));
-            //PluginBase.SetCommand(0, "Format", FormatSQL, new ShortcutKey(false, false, false, Keys.None));
-            //PluginBase.SetCommand(0, "Format And Parse", FormatSQLAndParseParams, new ShortcutKey(false, false, false, Keys.None));
-            PluginBase.SetCommand(1, "Config", ShowConfigWindow); _idMyDlg = 1;
+            PluginBase.SetCommand(0, "Format", FormatSql, new ShortcutKey(false, false, false, Keys.None));
+            PluginBase.SetCommand(0, "Format And Parse", FormatSqlAndParseParams, new ShortcutKey(false, false, false, Keys.None));
+            PluginBase.SetCommand(1, "Config", ShowConfigWindow); _idConfigWindow = 1;
         }
 
         internal static void SetToolBarIcon()
         {
-            toolbarIcons tbIcons = new toolbarIcons();
-            tbIcons.hToolbarBmp = TbBmp.GetHbitmap();
-            IntPtr pTbIcons = Marshal.AllocHGlobal(Marshal.SizeOf(tbIcons));
+            var tbIcons = new toolbarIcons
+            {
+                hToolbarBmp = TbBmp.GetHbitmap()
+            };
+            var pTbIcons = Marshal.AllocHGlobal(Marshal.SizeOf(tbIcons));
             Marshal.StructureToPtr(tbIcons, pTbIcons, false);
-            Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_ADDTOOLBARICON, PluginBase._funcItems.Items[_idMyDlg]._cmdID, pTbIcons);
+            Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_ADDTOOLBARICON, PluginBase._funcItems.Items[_idConfigWindow]._cmdID, pTbIcons);
             Marshal.FreeHGlobal(pTbIcons);
         }
 
         internal static void PluginCleanUp()
         {
-            Win32.WritePrivateProfileString("SomeSection", "SomeKey", _someSetting ? "1" : "0", _iniFilePath);
+            _settings.SaveAllSettings();
         }
 
         private static string NullOrValue(string originalValue, Func<string, string> processedValue)
@@ -89,14 +93,14 @@ namespace SQLParamParser
         {
             try
             {
-                Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_SETCURRENTLANGTYPE, 0, (int)LangType.L_SQL);
+                SetSqlLang();
 
-                var text = Editor.GetText(Editor.GetLength() + 1);
+                var text = GetCurrentText();
 
                 //Group0 - paramNumber
                 //Group1 - paramValue (original)
                 //Group2 - param Type
-                var regex = new Regex(@":p(?<Number>\d+)[\s]*=[\s]*(?<Value>((?!:p)[^\[])+)[\s]\[(?i)TYPE:[\s]*(?<Type>[^\s]+)[\s]*\([^\]]*\)[\s]*\]", RegexOptions.IgnoreCase);
+                var regex = new Regex($@"{_settings.ParamIdentificator}(?<Number>\d+)[\s]*=[\s]*(?<Value>((?!{_settings.ParamIdentificator})[^\[])+)[\s]\[(?i)TYPE:[\s]*(?<Type>[^\s]+)[\s]*\([^\]]*\)[\s]*\]", RegexOptions.IgnoreCase);
 
                 var matches = regex.Matches(text);
 
@@ -107,7 +111,7 @@ namespace SQLParamParser
 
                 var newText = text;
                 var offset = 0;
-                var parameters = new Dictionary<int, string>();//param number - value
+                var parameters = new Dictionary<int, string>(); //param number - value
 
                 const string paramComment = "\r\n--";
                 var paramCommentLength = paramComment.Length;
@@ -121,13 +125,6 @@ namespace SQLParamParser
                     string paramValueFormated;
                     switch (paramType)
                     {
-                        //case "STRING":
-                        //case "STRINGFIXEDLENGTH":
-                        //case "INT32":
-                        //case "INT64":
-                        //case "UINT32":
-                        //case "UINT64":
-                        //break;
                         case "DECIMAL":
                             paramValueFormated = NullOrValue(paramValueOriginal, o => decimal.Parse(paramValueOriginal).ToString(new NumberFormatInfo { NumberDecimalSeparator = "." }));
                             break;
@@ -135,7 +132,7 @@ namespace SQLParamParser
                             paramValueFormated = NullOrValue(paramValueOriginal, o => $"'{FixGuidText(paramValueOriginal)}'");
                             break;
                         case "DATETIME":
-                            paramValueFormated = NullOrValue(paramValueOriginal, o => $"'{DateTime.Parse(paramValueOriginal).ToString("yyyy-MM-dd HH:mm:ss")}'");
+                            paramValueFormated = NullOrValue(paramValueOriginal, o => $"'{DateTime.Parse(paramValueOriginal).ToString(_settings.DateFormat)}'");
                             break;
                         case "BOOLEAN":
                             paramValueFormated = NullOrValue(paramValueOriginal, o => bool.Parse(paramValueOriginal) ? "1" : "0");
@@ -143,7 +140,6 @@ namespace SQLParamParser
                         default:
                             paramValueFormated = paramValueOriginal;
                             break;
-                            //throw new Exception("Unknown param type = " + paramType);
                     }
 
                     parameters.Add(paramNumber, paramValueFormated);
@@ -153,7 +149,7 @@ namespace SQLParamParser
                     offset += paramCommentLength - 1;
                 }
 
-                var paramToChangeRegex = new Regex(@":p(?<number>\d+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+                var paramToChangeRegex = new Regex($@"{_settings.ParamIdentificator}(?<number>\d+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
                 while (true)
                 {
@@ -164,6 +160,13 @@ namespace SQLParamParser
                     }
 
                     var paramNumber = int.Parse(match.Groups["number"].ToString());
+
+                    string paramValue;
+                    if (!parameters.TryGetValue(paramNumber, out paramValue))
+                    {
+                        throw new Exception($"Parameter with index \"{paramNumber}\" was not found in the list of paramters.");
+                    }
+
                     newText = newText.Remove(match.Index, match.Length);
                     newText = newText.Insert(match.Index, parameters[paramNumber]);
                 }
@@ -176,69 +179,75 @@ namespace SQLParamParser
             }
         }
 
-        //internal static void FormatSQL()
-        //{
-        //    SetSQLLang();
+        internal static void FormatSql()
+        {
+            SetSqlLang();
 
-        //    //var text = Editor.GetText(Editor.GetTextLength());
+            var text = GetCurrentText();
 
-        //    //lzbasetype.gFmtOpt.Select_Columnlist_Style = TAlignStyle.asStacked;
-        //    //lzbasetype.gFmtOpt.Select_Columnlist_Comma = TLinefeedsCommaOption.lfAfterComma;
-        //    //lzbasetype.gFmtOpt.SelectItemInNewLine = false;
-        //    //lzbasetype.gFmtOpt.AlignAliasInSelectList = true;
-        //    //lzbasetype.gFmtOpt.TreatDistinctAsVirtualColumn = false;
-        //    //lzbasetype.gFmtOpt.linenumber_enabled = false;
+            var innerFormatter = new TSqlStandardFormatter(_settings.IndentString,
+                                                           _settings.SpacesPerTab,
+                                                           _settings.MaxLineWidth,
+                                                           _settings.ExpandCommaList,
+                                                           _settings.TrailingCommas,
+                                                           _settings.SpaceAfterExpandedComma,
+                                                           _settings.ExpandBooleanExpressions,
+                                                           _settings.ExpandCaseStatements,
+                                                           _settings.ExpandBetweenConditions,
+                                                           _settings.BreakJoinOnSections,
+                                                           _settings.UppercaseKeywords,
+                                                           false,
+                                                           _settings.KeywordStandardization);
+            var tokenizer = new TSqlStandardTokenizer();
+            var parser = new TSqlStandardParser();
 
-        //    //var sqlparser = new TGSqlParser(TDbVendor.DbVMssql) { SqlText = { Text = text } };
 
-        //    //var i = sqlparser.PrettyPrint();
-        //    //if (i == 0)
-        //    //{
-        //    //    var newText = sqlparser.FormattedSqlText.Text;
-        //    //    Editor.SetText(newText);
-        //    //}
-        //    //else
-        //    //{
-        //    //    MessageBox.Show(sqlparser.ErrorMessages);
-        //    //}
-        //}
+            var parsedSql = parser.ParseSQL(tokenizer.TokenizeSQL(text));
 
-        //internal static void FormatSQLAndParseParams()
-        //{
-        //    FormatSQL();
-        //    ParseParams();
-        //}
+            Editor.SetText(innerFormatter.FormatSQLTree(parsedSql));
+
+        }
+
+        internal static void FormatSqlAndParseParams()
+        {
+            ParseParams();
+            FormatSql();
+        }
 
         internal static void ShowConfigWindow()
         {
             if (_configWindow == null)
             {
-                _configWindow = new ConfigWindow();
+                _configWindow = new ConfigWindow(_settings);
 
-                using (Bitmap newBmp = new Bitmap(16, 16))
+                using (var newBmp = new Bitmap(16, 16))
                 {
-                    Graphics g = Graphics.FromImage(newBmp);
-                    ColorMap[] colorMap = new ColorMap[1];
-                    colorMap[0] = new ColorMap();
-                    colorMap[0].OldColor = Color.Fuchsia;
-                    colorMap[0].NewColor = Color.FromKnownColor(KnownColor.ButtonFace);
-                    ImageAttributes attr = new ImageAttributes();
+                    var g = Graphics.FromImage(newBmp);
+                    var colorMap = new ColorMap[1];
+                    colorMap[0] = new ColorMap
+                    {
+                        OldColor = Color.Fuchsia,
+                        NewColor = Color.FromKnownColor(KnownColor.ButtonFace)
+                    };
+                    var attr = new ImageAttributes();
                     attr.SetRemapTable(colorMap);
                     g.DrawImage(TbBmpTbTab, new Rectangle(0, 0, 16, 16), 0, 0, 16, 16, GraphicsUnit.Pixel, attr);
                     _tbIcon = Icon.FromHandle(newBmp.GetHicon());
                 }
 
-                NppTbData _nppTbData = new NppTbData();
-                _nppTbData.hClient = _configWindow.Handle;
-                _nppTbData.pszName = "Config";
-                _nppTbData.dlgID = _idMyDlg;
-                _nppTbData.uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR;
-                _nppTbData.hIconTab = (uint)_tbIcon.Handle;
-                _nppTbData.pszModuleName = PluginName;
-                IntPtr _ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(_nppTbData));
-                Marshal.StructureToPtr(_nppTbData, _ptrNppTbData, false);
+                var nppTbData = new NppTbData
+                {
+                    hClient = _configWindow.Handle,
+                    pszName = $"{PluginName} Configuration",
+                    dlgID = _idConfigWindow,
+                    uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR,
+                    hIconTab = (uint)_tbIcon.Handle,
+                    pszModuleName = PluginName
+                };
+                var ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(nppTbData));
+                Marshal.StructureToPtr(nppTbData, ptrNppTbData, false);
 
-                Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMREGASDCKDLG, 0, _ptrNppTbData);
+                Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMREGASDCKDLG, 0, ptrNppTbData);
             }
             else
             {
