@@ -29,9 +29,7 @@
         private void InitializeComponent()
         {
             this.ExecuteButton = new System.Windows.Forms.Button();
-            this.iGrid1 = new TenTec.Windows.iGridLib.iGrid();
             this.DataGridView = new System.Windows.Forms.DataGridView();
-            ((System.ComponentModel.ISupportInitialize)(this.iGrid1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.DataGridView)).BeginInit();
             this.SuspendLayout();
             // 
@@ -44,12 +42,6 @@
             this.ExecuteButton.Text = "Execute";
             this.ExecuteButton.UseVisualStyleBackColor = true;
             this.ExecuteButton.Click += new System.EventHandler(this.ExecuteButton_Click);
-            // 
-            // iGrid1
-            // 
-            this.iGrid1.Location = new System.Drawing.Point(0, 0);
-            this.iGrid1.Name = "iGrid1";
-            this.iGrid1.TabIndex = 0;
             // 
             // DataGridView
             // 
@@ -74,7 +66,6 @@
             this.Controls.Add(this.ExecuteButton);
             this.Name = "ExecuteWindow";
             this.Text = "SQLParamParser Execute";
-            ((System.ComponentModel.ISupportInitialize)(this.iGrid1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.DataGridView)).EndInit();
             this.ResumeLayout(false);
 
@@ -82,7 +73,6 @@
 
         #endregion
         private System.Windows.Forms.Button ExecuteButton;
-        private TenTec.Windows.iGridLib.iGrid iGrid1;
         private System.Windows.Forms.DataGridView DataGridView;
     }
 }

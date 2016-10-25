@@ -55,10 +55,6 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
-    <Reference Include="TenTec.Windows.iGridLib.iGrid.v4.6, Version=4.6.0.0, Culture=neutral, PublicKeyToken=9d47002745f2416c, processorArchitecture=MSIL">
-      <HintPath>packages\iGrid.NET.1.2.0\lib\TenTec.Windows.iGridLib.iGrid.v4.6.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config\SettingName.cs" />
