@@ -1,5 +1,8 @@
-﻿using System.IO;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
+using System.Windows.Forms;
 using SQLParamParser.PluginInfrastructure;
 
 namespace SQLParamParser.Config
@@ -26,6 +29,10 @@ namespace SQLParamParser.Config
         public bool UppercaseKeywords { get; set; }
         public bool KeywordStandardization { get; set; }
 
+        //execute settings
+        public string ConnectionString { get; set; }
+
+
         public Settings()
         {
             var sbIniFilePath = new StringBuilder(Win32.MAX_PATH);
@@ -38,21 +45,33 @@ namespace SQLParamParser.Config
             ReadAllSettings();
         }
 
-        private string ReadString(SettingsSection section, SettingName name, string defaultValue)
+        private string ReadString(SettingsSection section, SettingName name, string defaultValue, bool decrypt = false)
         {
-            var sb = new StringBuilder(Win32.MAX_PATH);
-            var res = Win32.GetPrivateProfileString(section.ToString(),
-                                                    name.ToString(),
-                                                    defaultValue,
-                                                    sb,
-                                                    (uint)sb.Capacity,
-                                                    _iniFilePath);
+            try
+            {
+                var sb = new StringBuilder(Win32.MAX_PATH);
+                Win32.GetPrivateProfileString(section.ToString(),
+                                              name.ToString(),
+                                              defaultValue,
+                                              sb,
+                                              (uint)sb.Capacity,
+                                              _iniFilePath);
 
-            var result = sb.ToString();
+                var result = sb.ToString();
 
-            result = result.Replace("{space}", " ");
+                if (decrypt)
+                {
+                    var data = Convert.FromBase64String(result);
+                    result = Encoding.UTF8.GetString(data);
+                }
 
-            return result;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(new WindowWrapper(PluginBase.nppData._nppHandle), ex.Message, Main.PluginName, MessageBoxButtons.OK);
+                return defaultValue;
+            }
         }
 
         private int ReadInt(SettingsSection section, SettingName name, int defaultValue)
@@ -81,9 +100,13 @@ namespace SQLParamParser.Config
             return defaultValue;
         }
 
-        private bool WriteString(SettingsSection section, SettingName name, string value)
+        private bool WriteString(SettingsSection section, SettingName name, string value, bool encrypt = false)
         {
-            value = value.Replace(" ", "{space}");
+            if (encrypt)
+            {
+                var bytes = Encoding.UTF8.GetBytes(value);
+                value = Convert.ToBase64String(bytes);
+            }
 
             return Win32.WritePrivateProfileString(section.ToString(),
                                 name.ToString(),
@@ -98,7 +121,7 @@ namespace SQLParamParser.Config
             DateFormat = ReadString(SettingsSection.ParamParseSettings, SettingName.DateFormat, "yyyy-MM-dd HH:mm:ss");
 
             //FormatSettings
-            IndentString = ReadString(SettingsSection.FormatSettings, SettingName.IndentString, "\t");
+            IndentString = ReadString(SettingsSection.FormatSettings, SettingName.IndentString, @"\t");
             SpacesPerTab = ReadInt(SettingsSection.FormatSettings, SettingName.SpacesPerTab, 4);
             MaxLineWidth = ReadInt(SettingsSection.FormatSettings, SettingName.MaxLineWidth, 999);
             ExpandCommaList = ReadBool(SettingsSection.FormatSettings, SettingName.ExpandCommaList, true);
@@ -110,6 +133,9 @@ namespace SQLParamParser.Config
             BreakJoinOnSections = ReadBool(SettingsSection.FormatSettings, SettingName.BreakJoinOnSections, false);
             UppercaseKeywords = ReadBool(SettingsSection.FormatSettings, SettingName.UppercaseKeywords, true);
             KeywordStandardization = ReadBool(SettingsSection.FormatSettings, SettingName.KeywordStandardization, false);
+
+            //execute settings
+            ConnectionString = ReadString(SettingsSection.ExecuteSettings, SettingName.ConnectionString, "");
         }
 
         public void SaveAllSettings()
@@ -131,6 +157,9 @@ namespace SQLParamParser.Config
             WriteString(SettingsSection.FormatSettings, SettingName.BreakJoinOnSections, BreakJoinOnSections.ToString());
             WriteString(SettingsSection.FormatSettings, SettingName.UppercaseKeywords, UppercaseKeywords.ToString());
             WriteString(SettingsSection.FormatSettings, SettingName.KeywordStandardization, KeywordStandardization.ToString());
+
+            //Execute settings
+            WriteString(SettingsSection.ExecuteSettings, SettingName.ConnectionString, ConnectionString);
         }
     }
 }

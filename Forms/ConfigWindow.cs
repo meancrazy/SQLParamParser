@@ -29,6 +29,8 @@ namespace SQLParamParser.Forms
             BreakJoinOnSectionsEdit.Checked = _settings.BreakJoinOnSections;
             UppercaseKeywordsEdit.Checked = _settings.UppercaseKeywords;
             KeywordStandardizationEdit.Checked = _settings.KeywordStandardization;
+
+            ConnectionStringEdit.Text = _settings.ConnectionString;
         }
 
         private void ParamIdentificatorNameEdit_TextChanged(object sender, EventArgs e)
@@ -99,6 +101,12 @@ namespace SQLParamParser.Forms
         private void KeywordStandardizationEdit_CheckedChanged(object sender, EventArgs e)
         {
             _settings.KeywordStandardization = KeywordStandardizationEdit.Checked;
+        }
+
+        private void ConnectionStringEdit_TextChanged(object sender, EventArgs e)
+        {
+            _settings.ConnectionString = ConnectionStringEdit.Text;
+
         }
     }
 }

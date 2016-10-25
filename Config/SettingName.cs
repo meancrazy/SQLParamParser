@@ -17,6 +17,8 @@
         ExpandBetweenConditions,
         BreakJoinOnSections,
         UppercaseKeywords,
-        KeywordStandardization
+        KeywordStandardization,
+
+        ConnectionString,
     }
 }

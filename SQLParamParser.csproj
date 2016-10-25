@@ -51,13 +51,25 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+    <Reference Include="TenTec.Windows.iGridLib.iGrid.v4.6, Version=4.6.0.0, Culture=neutral, PublicKeyToken=9d47002745f2416c, processorArchitecture=MSIL">
+      <HintPath>packages\iGrid.NET.1.2.0\lib\TenTec.Windows.iGridLib.iGrid.v4.6.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config\SettingName.cs" />
     <Compile Include="Config\SettingsSection.cs" />
+    <Compile Include="PluginInfrastructure\WindowWrapper.cs" />
+    <Compile Include="Forms\ExecuteWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ExecuteWindow.Designer.cs">
+      <DependentUpon>ExecuteWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="PluginInfrastructure\ClikeStringArray.cs" />
     <Compile Include="PluginInfrastructure\DllExport\DllExportAttribute.cs" />
     <Compile Include="Forms\ConfigWindow.cs">
@@ -93,6 +105,9 @@
     <EmbeddedResource Include="Forms\ConfigWindow.resx">
       <DependentUpon>ConfigWindow.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ExecuteWindow.resx">
+      <DependentUpon>ExecuteWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

@@ -21,10 +21,38 @@ namespace SQLParamParser
         private static Settings _settings;
 
         private static ConfigWindow _configWindow;
+        private static ExecuteWindow _executeWindow;
         private static int _idConfigWindow = -1;
+        private static int _idExecuteWindow = -1;
         private static readonly Bitmap TbBmp = Properties.Resources.star;
         private static readonly Bitmap TbBmpTbTab = Properties.Resources.star_bmp;
         private static Icon _tbIcon;
+
+        public static Icon TbIcon
+        {
+            get
+            {
+                if (_tbIcon == null)
+                {
+                    using (var newBmp = new Bitmap(16, 16))
+                    {
+                        var g = Graphics.FromImage(newBmp);
+                        var colorMap = new ColorMap[1];
+                        colorMap[0] = new ColorMap
+                        {
+                            OldColor = Color.Fuchsia,
+                            NewColor = Color.FromKnownColor(KnownColor.ButtonFace)
+                        };
+                        var attr = new ImageAttributes();
+                        attr.SetRemapTable(colorMap);
+                        g.DrawImage(TbBmpTbTab, new Rectangle(0, 0, 16, 16), 0, 0, 16, 16, GraphicsUnit.Pixel, attr);
+                        _tbIcon = Icon.FromHandle(newBmp.GetHicon());
+                    }
+                }
+
+                return _tbIcon;
+            }
+        }
 
         private static readonly IScintillaGateway Editor = new ScintillaGateway(PluginBase.GetCurrentScintilla());
 
@@ -61,10 +89,16 @@ namespace SQLParamParser
         {
             _settings = new Settings();
 
-            PluginBase.SetCommand(0, "Parse", ParseParams, new ShortcutKey(false, false, false, Keys.None));
-            PluginBase.SetCommand(0, "Format", FormatSql, new ShortcutKey(false, false, false, Keys.None));
-            PluginBase.SetCommand(0, "Format And Parse", FormatSqlAndParseParams, new ShortcutKey(false, false, false, Keys.None));
-            PluginBase.SetCommand(1, "Config", ShowConfigWindow); _idConfigWindow = 1;
+            PluginBase.SetCommand(0, "Parse", ParseParams);
+            PluginBase.SetCommand(1, "Format", FormatSql);
+            PluginBase.SetCommand(2, "Format And Parse", FormatSqlAndParseParams);
+            PluginBase.SetCommand(3, "Format, Parse, Execute", FormatSqlParseExecuteParams);
+
+            PluginBase.SetCommand(4, "Execute", ShowExecuteWindow, new ShortcutKey(true, false, false, Keys.F5));
+            _idExecuteWindow = 4;
+
+            PluginBase.SetCommand(5, "Config", ShowConfigWindow);
+            _idConfigWindow = 5;
         }
 
         internal static void SetToolBarIcon()
@@ -214,26 +248,18 @@ namespace SQLParamParser
             FormatSql();
         }
 
+        internal static void FormatSqlParseExecuteParams()
+        {
+            ParseParams();
+            FormatSql();
+            ShowExecuteWindow();
+        }
+
         internal static void ShowConfigWindow()
         {
             if (_configWindow == null)
             {
                 _configWindow = new ConfigWindow(_settings);
-
-                using (var newBmp = new Bitmap(16, 16))
-                {
-                    var g = Graphics.FromImage(newBmp);
-                    var colorMap = new ColorMap[1];
-                    colorMap[0] = new ColorMap
-                    {
-                        OldColor = Color.Fuchsia,
-                        NewColor = Color.FromKnownColor(KnownColor.ButtonFace)
-                    };
-                    var attr = new ImageAttributes();
-                    attr.SetRemapTable(colorMap);
-                    g.DrawImage(TbBmpTbTab, new Rectangle(0, 0, 16, 16), 0, 0, 16, 16, GraphicsUnit.Pixel, attr);
-                    _tbIcon = Icon.FromHandle(newBmp.GetHicon());
-                }
 
                 var nppTbData = new NppTbData
                 {
@@ -241,7 +267,7 @@ namespace SQLParamParser
                     pszName = $"{PluginName} Configuration",
                     dlgID = _idConfigWindow,
                     uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR,
-                    hIconTab = (uint)_tbIcon.Handle,
+                    hIconTab = (uint)TbIcon.Handle,
                     pszModuleName = PluginName
                 };
                 var ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(nppTbData));
@@ -252,6 +278,32 @@ namespace SQLParamParser
             else
             {
                 Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMSHOW, 0, _configWindow.Handle);
+            }
+        }
+
+        internal static void ShowExecuteWindow()
+        {
+            if (_executeWindow == null)
+            {
+                _executeWindow = new ExecuteWindow(_settings);
+
+                var nppTbData = new NppTbData
+                {
+                    hClient = _executeWindow.Handle,
+                    pszName = $"{PluginName} Execute",
+                    dlgID = _idExecuteWindow,
+                    uMask = NppTbMsg.CONT_BOTTOM,
+                    hIconTab = (uint)TbIcon.Handle,
+                    pszModuleName = PluginName
+                };
+                var ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(nppTbData));
+                Marshal.StructureToPtr(nppTbData, ptrNppTbData, false);
+
+                Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMREGASDCKDLG, 0, ptrNppTbData);
+            }
+            else
+            {
+                Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMSHOW, 0, _executeWindow.Handle);
             }
         }
     }
