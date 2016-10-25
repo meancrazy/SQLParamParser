@@ -56,9 +56,11 @@ namespace SQLParamParser.Forms
                         var command = new OdbcCommand(query, connection);
                         var adapter = new OdbcDataAdapter(command);
 
-                        _sourceTable.Clear();
-                        adapter.Fill(_sourceTable);
+                        adapter.MissingMappingAction= MissingMappingAction.Passthrough;
+                        adapter.MissingSchemaAction = MissingSchemaAction.AddWithKey;
 
+                        _sourceTable = new DataTable();
+                        adapter.Fill(_sourceTable);
                         DataGridView.DataSource = _sourceTable;
                     }
                     catch (Exception ex)
