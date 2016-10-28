@@ -28,7 +28,9 @@ namespace SQLParamParser
         private static readonly Bitmap TbBmpTbTab = Properties.Resources.star_bmp;
         private static Icon _tbIcon;
 
-        public static Icon TbIcon
+        public static NotepadPPGateway Gateway { get; private set; }
+
+        public static Icon ConfigWindowToolBarIcon
         {
             get
             {
@@ -63,11 +65,6 @@ namespace SQLParamParser
             return regex.Replace(guid, "");
         }
 
-        private static void SetSqlLang()
-        {
-            Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_SETCURRENTLANGTYPE, 0, (int)LangType.L_SQL);
-        }
-
         private static string GetCurrentText()
         {
             return Editor.GetText(Editor.GetLength() + 1);
@@ -88,6 +85,8 @@ namespace SQLParamParser
         internal static void CommandMenuInit()
         {
             _settings = new Settings();
+
+            Gateway = new NotepadPPGateway();
 
             PluginBase.SetCommand(0, "Parse", ParseParams);
             PluginBase.SetCommand(1, "Format", FormatSql);
@@ -127,7 +126,7 @@ namespace SQLParamParser
         {
             try
             {
-                SetSqlLang();
+                Gateway.SetCurrentLanguage(LangType.L_SQL);
 
                 var text = GetCurrentText();
 
@@ -215,7 +214,7 @@ namespace SQLParamParser
 
         internal static void FormatSql()
         {
-            SetSqlLang();
+            Gateway.SetCurrentLanguage(LangType.L_SQL);
 
             var text = GetCurrentText();
 
@@ -267,7 +266,7 @@ namespace SQLParamParser
                     pszName = $"{PluginName} Configuration",
                     dlgID = _idConfigWindow,
                     uMask = NppTbMsg.DWS_DF_CONT_RIGHT | NppTbMsg.DWS_ICONTAB | NppTbMsg.DWS_ICONBAR,
-                    hIconTab = (uint)TbIcon.Handle,
+                    hIconTab = (uint)ConfigWindowToolBarIcon.Handle,
                     pszModuleName = PluginName
                 };
                 var ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(nppTbData));
@@ -293,17 +292,21 @@ namespace SQLParamParser
                     pszName = $"{PluginName} Execute",
                     dlgID = _idExecuteWindow,
                     uMask = NppTbMsg.CONT_BOTTOM,
-                    hIconTab = (uint)TbIcon.Handle,
+                    hIconTab = (uint)ConfigWindowToolBarIcon.Handle,
                     pszModuleName = PluginName
                 };
                 var ptrNppTbData = Marshal.AllocHGlobal(Marshal.SizeOf(nppTbData));
                 Marshal.StructureToPtr(nppTbData, ptrNppTbData, false);
 
                 Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMREGASDCKDLG, 0, ptrNppTbData);
+
+                _executeWindow.Execute();
             }
             else
             {
                 Win32.SendMessage(PluginBase.nppData._nppHandle, (uint)NppMsg.NPPM_DMMSHOW, 0, _executeWindow.Handle);
+
+                _executeWindow.Execute();
             }
         }
     }
