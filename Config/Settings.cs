@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -78,29 +77,17 @@ namespace SQLParamParser.Config
         {
             var intString = ReadString(section, name, defaultValue.ToString());
 
-            int result;
-            if (int.TryParse(intString, out result))
-            {
-                return result;
-            }
-
-            return defaultValue;
+            return int.TryParse(intString, out var result) ? result : defaultValue;
         }
 
         private bool ReadBool(SettingsSection section, SettingName name, bool defaultValue)
         {
             var boolString = ReadString(section, name, defaultValue.ToString());
 
-            bool result;
-            if (bool.TryParse(boolString, out result))
-            {
-                return result;
-            }
-
-            return defaultValue;
+            return bool.TryParse(boolString, out var result) ? result : defaultValue;
         }
 
-        private bool WriteString(SettingsSection section, SettingName name, string value, bool encrypt = false)
+        private void WriteString(SettingsSection section, SettingName name, string value, bool encrypt = false)
         {
             if (encrypt)
             {
@@ -108,10 +95,7 @@ namespace SQLParamParser.Config
                 value = Convert.ToBase64String(bytes);
             }
 
-            return Win32.WritePrivateProfileString(section.ToString(),
-                                name.ToString(),
-                                value,
-                                _iniFilePath);
+            Win32.WritePrivateProfileString(section.ToString(), name.ToString(), value, _iniFilePath);
         }
 
         private void ReadAllSettings()

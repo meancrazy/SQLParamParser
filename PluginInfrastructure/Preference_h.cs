@@ -1,11 +1,15 @@
-﻿// NPP plugin platform for .Net v0.92.83 by Kasper B. Graversen etc.
+﻿// NPP plugin platform for .Net v0.94.00 by Kasper B. Graversen etc.
 //
 // This file should stay in sync with the CPP project file
 // "notepad-plus-plus/scintilla/include/Scintilla.iface"
 // found at
 // https://github.com/notepad-plus-plus/notepad-plus-plus/blob/master/scintilla/include/Scintilla.iface
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
-namespace SQLParamParser.PluginInfrastructure
+namespace NppPluginNET.PluginInfrastructure
 {
 	public enum Preference
 	{

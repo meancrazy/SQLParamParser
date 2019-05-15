@@ -1,10 +1,10 @@
-﻿// NPP plugin platform for .Net v0.92.83 by Kasper B. Graversen etc.
-
+﻿// NPP plugin platform for .Net v0.94.00 by Kasper B. Graversen etc.
 using System;
 using System.Runtime.InteropServices;
 using NppPlugin.DllExport;
+using SQLParamParser.PluginInfrastructure;
 
-namespace SQLParamParser.PluginInfrastructure
+namespace SQLParamParser
 {
     class UnmanagedExports
     {

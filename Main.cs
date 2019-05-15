@@ -218,19 +218,27 @@ namespace SQLParamParser
 
             var text = GetCurrentText();
 
-            var innerFormatter = new TSqlStandardFormatter(_settings.IndentString,
-                                                           _settings.SpacesPerTab,
-                                                           _settings.MaxLineWidth,
-                                                           _settings.ExpandCommaList,
-                                                           _settings.TrailingCommas,
-                                                           _settings.SpaceAfterExpandedComma,
-                                                           _settings.ExpandBooleanExpressions,
-                                                           _settings.ExpandCaseStatements,
-                                                           _settings.ExpandBetweenConditions,
-                                                           _settings.BreakJoinOnSections,
-                                                           _settings.UppercaseKeywords,
-                                                           false,
-                                                           _settings.KeywordStandardization);
+            var options = new TSqlStandardFormatterOptions
+            {
+                BreakJoinOnSections = _settings.BreakJoinOnSections,
+                ExpandBetweenConditions = _settings.ExpandBetweenConditions,
+                ExpandBooleanExpressions = _settings.ExpandBooleanExpressions,
+                ExpandCaseStatements = _settings.ExpandCaseStatements,
+                ExpandCommaLists = _settings.ExpandCommaList,
+                ExpandInLists = false,
+                HTMLColoring = false,
+                IndentString = _settings.IndentString,
+                KeywordStandardization = _settings.KeywordStandardization,
+                MaxLineWidth = _settings.MaxLineWidth,
+                NewClauseLineBreaks = 0,
+                NewStatementLineBreaks = 0,
+                SpaceAfterExpandedComma = _settings.SpaceAfterExpandedComma,
+                SpacesPerTab = _settings.SpacesPerTab,
+                TrailingCommas = _settings.TrailingCommas,
+                UppercaseKeywords = _settings.UppercaseKeywords
+            };
+
+            var innerFormatter = new TSqlStandardFormatter(options);
             var tokenizer = new TSqlStandardTokenizer();
             var parser = new TSqlStandardParser();
 
